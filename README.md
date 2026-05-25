@@ -1,4 +1,4 @@
-# VoltEdge Operational Monitoring
+# VoltEdge Mobility A/S - Operational Monitoring
 
 VoltEdge Operational Monitoring is an MVP for monitoring EV charger operations. The first milestone implements Telemetry Monitoring, the first step in the value chain:
 
