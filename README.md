@@ -1,26 +1,26 @@
 # VoltEdge Mobility A/S - Operational Monitoring
 
-VoltEdge Operational Monitoring is an MVP for monitoring EV charger operations. Sprint 1 implemented Telemetry Monitoring, and Sprint 2 adds Anomaly Detection:
+VoltEdge Operational Monitoring er en MVP til operationel overvågning af EV-ladere. Sprint 1 implementerede Telemetry Monitoring, og Sprint 2 tilføjer Anomaly Detection:
 
 Telemetry Monitoring -> Anomaly Detection -> Operational Insights
 
-Operational Insights, Power BI dashboards, RabbitMQ, frontend, alerting, authentication and CI/CD are planned for later milestones and are not implemented yet.
+Operational Insights, Power BI-dashboard, RabbitMQ, frontend, alerting, authentication og CI/CD er planlagt til senere milestones og er ikke implementeret endnu.
 
-## Architecture Overview
+## Arkitekturoverblik
 
-The MVP contains:
+MVP'en indeholder:
 
-- FastAPI backend for the Operational Monitoring API.
-- PostgreSQL database for storing TelemetryEvent and Anomaly records.
-- SQLAlchemy persistence layer.
-- Pydantic schemas for request validation.
-- AnalyticsDomainService for simple anomaly detection rules.
-- Docker Compose stack with backend and PostgreSQL services.
-- Pytest tests for the API.
+- FastAPI-backend til Operational Monitoring API'et.
+- PostgreSQL-database til lagring af TelemetryEvent- og Anomaly-records.
+- SQLAlchemy som persistence layer.
+- Pydantic schemas til request-validering.
+- AnalyticsDomainService med simple regler til anomaly detection.
+- Docker Compose-stack med backend- og PostgreSQL-services.
+- Pytest-tests for API'et.
 
-Domain concepts used in this milestone include Charger, Connector, TelemetryEvent, ChargerStatus, ErrorCode, PowerMeasurement, Heartbeat and Anomaly. MonitoringRule is represented by simple rules in the AnalyticsDomainService. Alert and OperationalInsight remain future concepts.
+Domænebegreberne i denne milestone er Charger, Connector, TelemetryEvent, ChargerStatus, ErrorCode, PowerMeasurement, Heartbeat og Anomaly. MonitoringRule er repræsenteret som simple regler i AnalyticsDomainService. Alert og OperationalInsight er fremtidige domænebegreber.
 
-## Project Structure
+## Projektstruktur
 
 ```text
 backend/
@@ -50,27 +50,27 @@ README.md
 .env.example
 ```
 
-## Setup
+## Opsætning
 
-Copy the example environment file if you want to customize ports or credentials:
+Kopier eksempelmiljøfilen, hvis porte eller credentials skal tilpasses:
 
 ```bash
 cp .env.example .env
 ```
 
-Start the stack:
+Start stacken:
 
 ```bash
 docker compose up --build
 ```
 
-Stop the stack:
+Stop stacken:
 
 ```bash
 docker compose down
 ```
 
-Remove the database volume:
+Fjern databasevolumen:
 
 ```bash
 docker compose down -v
@@ -78,23 +78,23 @@ docker compose down -v
 
 ## API Endpoints
 
-| Method | Endpoint | Description |
+| Method | Endpoint | Beskrivelse |
 | --- | --- | --- |
-| GET | `/api/health` | Check API health |
-| POST | `/api/telemetry` | Store a TelemetryEvent |
-| GET | `/api/telemetry` | List stored TelemetryEvents |
-| GET | `/api/anomalies` | List detected Anomalies |
-| GET | `/api/anomalies/{id}` | Get one detected Anomaly |
+| GET | `/api/health` | Tjekker om API'et kører |
+| POST | `/api/telemetry` | Gemmer et TelemetryEvent |
+| GET | `/api/telemetry` | Lister gemte TelemetryEvents |
+| GET | `/api/anomalies` | Lister detekterede Anomalies |
+| GET | `/api/anomalies/{id}` | Henter én detekteret Anomaly |
 
-## Curl Examples
+## Curl-eksempler
 
-Health:
+Health check:
 
 ```bash
 curl http://localhost:8000/api/health
 ```
 
-Create a TelemetryEvent:
+Opret et TelemetryEvent:
 
 ```bash
 curl -X POST http://localhost:8000/api/telemetry \
@@ -109,13 +109,13 @@ curl -X POST http://localhost:8000/api/telemetry \
   }'
 ```
 
-List stored TelemetryEvents:
+List gemte TelemetryEvents:
 
 ```bash
 curl http://localhost:8000/api/telemetry
 ```
 
-Create a faulty TelemetryEvent and list detected Anomalies:
+Opret et fejlramt TelemetryEvent og list detekterede Anomalies:
 
 ```bash
 curl -X POST http://localhost:8000/api/telemetry \
@@ -134,9 +134,9 @@ curl -X POST http://localhost:8000/api/telemetry \
 curl http://localhost:8000/api/anomalies
 ```
 
-## Local Tests
+## Lokale tests
 
-Install dependencies and run tests from the backend directory:
+Installer dependencies og kør tests fra backend-mappen:
 
 ```bash
 cd backend
@@ -144,4 +144,4 @@ pip install -r requirements.txt
 pytest
 ```
 
-The tests use SQLite in memory so they can run without Docker or PostgreSQL.
+Testene bruger SQLite in-memory, så de kan køres uden Docker eller PostgreSQL.
