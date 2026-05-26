@@ -51,6 +51,12 @@ curl http://localhost:8000/api/insights/charger-health
 curl http://localhost:8000/api/insights/anomaly-rate
 ```
 
+## BI Ready Operational Insights
+
+```bash
+curl http://localhost:8000/api/bi/operational-insights
+```
+
 ## Example With ErrorCode
 
 ```bash

@@ -6,6 +6,7 @@ from app.domain.monitoring import (
     AnomalyRateInsight,
     AnomalySeverity,
     AnomalyType,
+    BiOperationalInsight,
     ChargerHealthInsight,
     ChargerStatus,
     HealthState,
@@ -183,6 +184,30 @@ class AnalyticsDomainService:
             anomaly_rate_percent=self._anomaly_rate(total_events, total_anomalies),
             severity_distribution=severity_distribution,
         )
+
+    def calculate_bi_operational_insights(
+        self,
+        telemetry_events: list[TelemetryInsightSource],
+        anomalies: list[AnomalyInsightSource],
+    ) -> list[BiOperationalInsight]:
+        charger_health = self.calculate_charger_health(telemetry_events, anomalies)
+
+        return [
+            BiOperationalInsight(
+                charger_id=health.charger_id,
+                latest_status=health.latest_status,
+                total_events=health.total_events,
+                total_anomalies=health.total_anomalies,
+                high_severity_anomalies=health.high_severity_anomalies,
+                average_power_kw=health.average_power_kw,
+                anomaly_rate_percent=self._anomaly_rate(
+                    health.total_events,
+                    health.total_anomalies,
+                ),
+                health_state=health.health_state,
+            )
+            for health in charger_health
+        ]
 
     @staticmethod
     def _average_power(telemetry_events: list[TelemetryInsightSource]) -> float:

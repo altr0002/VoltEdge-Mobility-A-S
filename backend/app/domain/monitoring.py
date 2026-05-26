@@ -102,6 +102,18 @@ class ChargerHealthInsight:
 
 
 @dataclass(frozen=True)
+class BiOperationalInsight:
+    charger_id: str
+    latest_status: ChargerStatus
+    total_events: int
+    total_anomalies: int
+    high_severity_anomalies: int
+    average_power_kw: float
+    anomaly_rate_percent: float
+    health_state: HealthState
+
+
+@dataclass(frozen=True)
 class AnomalyRateInsight:
     total_telemetry_events: int
     total_anomalies: int

@@ -1,42 +1,52 @@
-# VoltEdge Mobility A/S - Operational Monitoring
+# VoltEdge Operational Monitoring MVP
 
-VoltEdge Operational Monitoring er en backend-baseret MVP til operationel overvågning af EV-ladere. Projektet viser, hvordan en digital platform kan modtage telemetridata fra ladere, gemme data i PostgreSQL og analysere driftsdata for at opdage simple operationelle afvigelser.
+VoltEdge Operational Monitoring MVP er en backend-baseret eksamens-MVP til operationel overvågning af EV-ladere for VoltEdge Mobility A/S.
 
-Systemet følger værdikæden:
+Projektet demonstrerer, hvordan en fremtidig digital platform kan modtage telemetridata fra ladere, gemme data i PostgreSQL, udføre regelbaseret anomaly detection og eksponere operational insights via API'er.
 
+## Bounded Context
+
+Den primære bounded context er:
+
+```text
+Operational Monitoring
+```
+
+## MVP Value Chain
+
+```text
 Telemetry Monitoring -> Anomaly Detection -> Operational Insights
+```
 
-Den nuværende løsning implementerer hele MVP-værdikæden i en simpel backend: modtagelse og lagring af TelemetryEvent-data, regelbaseret oprettelse af Anomaly-records og API-baserede Operational Insights. Power BI-dashboard, RabbitMQ, frontend, alerting, authentication og CI/CD er ikke en del af den nuværende implementation.
+## Implementeret Funktionalitet
 
-## Funktionalitet
-
-- FastAPI-backend til Operational Monitoring API'et.
-- PostgreSQL-database til lagring af TelemetryEvent- og Anomaly-records.
+- Telemetry ingestion via FastAPI.
+- Persistence af TelemetryEvent-data i PostgreSQL.
+- Pydantic-validering af API-requests og responses.
 - SQLAlchemy som persistence layer.
-- Pydantic schemas til validering af API-requests og responses.
-- AnalyticsDomainService til regelbaseret anomaly detection og simple operational insights.
-- Docker Compose-stack med backend- og PostgreSQL-services.
-- Pytest-tests for telemetry flow, anomaly detection, operational insights og API-endpoints.
+- Regelbaseret anomaly detection i AnalyticsDomainService.
+- Persistence af Anomaly-records i PostgreSQL.
+- Operational Insights API baseret på eksisterende telemetry/anomaly-data.
+- BI / Power BI-ready API endpoint.
+- Docker Compose runtime med backend og PostgreSQL.
+- Pytest-tests for telemetry, anomalies, insights og BI endpoint.
+- GitHub Actions CI til testkørsel.
+- VM-baseret demo flow.
 
-## Domænemodel
+## Ikke En Del Af MVP'en
 
-Projektet er bygget omkring bounded contexten Operational Monitoring.
+Dette er ikke en fuld produktionsplatform. Følgende er bevidst uden for scope:
 
-Centrale domænebegreber:
-
-- Charger
-- Connector
-- TelemetryEvent
-- ChargerStatus
-- ErrorCode
-- PowerMeasurement
-- Heartbeat
-- Anomaly
-- MonitoringRule
-- OperationalInsight
-- Alert
-
-I den nuværende implementation er MonitoringRule repræsenteret som simple regler i AnalyticsDomainService. OperationalInsight er implementeret som read models/API-responses baseret på eksisterende TelemetryEvent- og Anomaly-data. Alert er et fremtidigt domænebegreb, men er ikke implementeret endnu.
+- Real OCPP integration.
+- Frontend dashboard.
+- Authentication og authorization.
+- RabbitMQ eller Kafka.
+- Billing, payment og partner contracts.
+- Real alert notifications via email/SMS.
+- Production machine learning eller predictive maintenance pipeline.
+- Kubernetes.
+- Terraform.
+- Production cloud deployment.
 
 ## Arkitekturoverblik
 
@@ -56,22 +66,10 @@ AnalyticsDomainService
 Anomaly persistence
         |
         v
-Operational Insights
-        |
-        v
-GET /api/insights/*
+Operational Insights / BI-ready API
 ```
 
-Når et TelemetryEvent oprettes via API'et, gemmes eventet først i PostgreSQL. Derefter evaluerer AnalyticsDomainService eventet mod de simple overvågningsregler. Hvis en regel matcher, gemmes en eller flere Anomaly-records i databasen. Operational Insights beregnes som read-only API-responses oven på de eksisterende TelemetryEvent- og Anomaly-tabeller.
-
-## Anomaly Detection-regler
-
-| Regel | Betingelse | Anomaly type | Severity |
-| --- | --- | --- | --- |
-| Charger fault | `status` er `FAULTED` | `CHARGER_FAULT` | `HIGH` |
-| Error code detected | `error_code` er ikke `null` | `ERROR_CODE_DETECTED` | `HIGH` |
-| Power anomaly | `status` er `CHARGING` og `power_kw` er `0` | `POWER_ANOMALY` | `MEDIUM` |
-| Charger unavailable | `status` er `UNAVAILABLE` eller `OFFLINE` | `CHARGER_UNAVAILABLE` | `MEDIUM` |
+FastAPI-backenden er det operationelle system. Power BI kan efterfølgende forbinde til backendens BI-endpoint som en uafhængig analytics- og visualiseringsplatform.
 
 ## Projektstruktur
 
@@ -94,28 +92,23 @@ docs/
   architecture.md
   api-examples.md
   demo-script.md
+  power-bi-guide.md
+
+scripts/
+  seed_demo_data.py
 
 .github/
   workflows/
+    ci.yml
 
 docker-compose.yml
 README.md
 .env.example
 ```
 
-## Teknologier
+## Kørsel På Virtuel Maskine
 
-- Python
-- FastAPI
-- PostgreSQL
-- SQLAlchemy
-- Pydantic
-- Docker og Docker Compose
-- Pytest
-
-## Kørsel på virtuel maskine
-
-MVP'en er designet til at blive demonstreret på projektets virtuelle maskine. Docker Compose kører både FastAPI-backend og PostgreSQL på VM'en.
+MVP'en er beregnet til at blive kørt på projektets virtuelle maskine med Docker Compose.
 
 SSH ind på VM'en:
 
@@ -123,13 +116,14 @@ SSH ind på VM'en:
 ssh <user>@<VM-IP>
 ```
 
-Hent nyeste kode:
+Gå til repoet og hent nyeste kode:
 
 ```bash
+cd VoltEdge-Mobility-A-S
 git pull
 ```
 
-Start applikationen på VM'en:
+Start backend og PostgreSQL:
 
 ```bash
 docker compose up -d --build
@@ -141,49 +135,35 @@ Tjek containerne:
 docker compose ps
 ```
 
-Tjek API health inde fra VM'en:
+Tjek API health fra VM'en:
 
 ```bash
 curl http://localhost:8000/api/health
 ```
 
-Swagger UI kan åbnes fra browseren:
+Åbn Swagger UI fra browser:
 
 ```text
 http://<VM-IP>:8000/docs
 ```
 
-## Lokal opsætning
+## Demo Data
 
-Kopier eksempelmiljøfilen, hvis porte eller credentials skal tilpasses:
-
-```bash
-cp .env.example .env
-```
-
-Start stacken:
+Når Docker Compose kører på VM'en, kan demo data oprettes med:
 
 ```bash
-docker compose up --build
+python3 scripts/seed_demo_data.py
 ```
 
-API'et er herefter tilgængeligt på:
+Scriptet opretter eksempeldata for:
 
-```text
-http://localhost:8000
-```
-
-Stop stacken:
-
-```bash
-docker compose down
-```
-
-Fjern databasevolumen:
-
-```bash
-docker compose down -v
-```
+- en HEALTHY charger
+- en WARNING charger
+- en CRITICAL charger
+- FAULTED status
+- error_code anomaly
+- CHARGING med `power_kw = 0`
+- UNAVAILABLE/OFFLINE charger
 
 ## API Endpoints
 
@@ -197,14 +177,9 @@ docker compose down -v
 | GET | `/api/insights/summary` | Viser samlet operationel status |
 | GET | `/api/insights/charger-health` | Viser health state per Charger |
 | GET | `/api/insights/anomaly-rate` | Viser anomaly rate og severity distribution |
+| GET | `/api/bi/operational-insights` | Returnerer flade BI-ready records |
 
-API-dokumentation kan åbnes i browseren:
-
-```text
-http://localhost:8000/docs
-```
-
-## Curl-eksempler
+## Curl Eksempler Til Demo
 
 Health check:
 
@@ -227,12 +202,6 @@ curl -X POST http://localhost:8000/api/telemetry \
   }'
 ```
 
-List gemte TelemetryEvents:
-
-```bash
-curl http://localhost:8000/api/telemetry
-```
-
 Opret et fejlramt TelemetryEvent:
 
 ```bash
@@ -248,33 +217,53 @@ curl -X POST http://localhost:8000/api/telemetry \
   }'
 ```
 
-List detekterede Anomalies:
+Vis telemetry:
+
+```bash
+curl http://localhost:8000/api/telemetry
+```
+
+Vis anomalies:
 
 ```bash
 curl http://localhost:8000/api/anomalies
 ```
 
-Hent samlet OperationalInsight summary:
+Vis operational insights:
 
 ```bash
 curl http://localhost:8000/api/insights/summary
-```
-
-Hent charger health:
-
-```bash
 curl http://localhost:8000/api/insights/charger-health
-```
-
-Hent anomaly rate:
-
-```bash
 curl http://localhost:8000/api/insights/anomaly-rate
 ```
 
-## Lokale tests
+Vis BI-ready data:
 
-Installer dependencies og kør tests fra backend-mappen:
+```bash
+curl http://localhost:8000/api/bi/operational-insights
+```
+
+## Demo Flow
+
+1. Start Docker Compose på VM'en.
+2. Seed demo data eller POST telemetry events manuelt.
+3. Vis `GET /api/telemetry`.
+4. Vis `GET /api/anomalies`.
+5. Vis Operational Insights endpoints.
+6. Vis BI-ready endpointet.
+7. Vis at tests passer.
+8. Vis GitHub Actions workflowet i repository.
+
+## Tests
+
+Kør tests fra backend-mappen:
+
+```bash
+cd backend
+pytest
+```
+
+Hvis dependencies ikke er installeret:
 
 ```bash
 cd backend
@@ -283,3 +272,23 @@ pytest
 ```
 
 Testene bruger SQLite in-memory, så de kan køres uden Docker eller PostgreSQL.
+
+## GitHub Actions CI
+
+Repositoryet indeholder et simpelt CI-workflow:
+
+```text
+.github/workflows/ci.yml
+```
+
+Workflowet kører på `push` og `pull_request`, installerer backend dependencies og kører `pytest`.
+
+## Power BI
+
+Power BI kan forbinde til:
+
+```text
+http://<VM-IP>:8000/api/bi/operational-insights
+```
+
+Se [docs/power-bi-guide.md](docs/power-bi-guide.md) for forslag til Power BI-forbindelse og dashboard-visuals.

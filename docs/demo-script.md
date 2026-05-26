@@ -102,3 +102,21 @@ curl http://localhost:8000/api/insights/anomaly-rate
 ```
 
 Use these responses to show the full MVP value chain: Telemetry Monitoring -> Anomaly Detection -> Operational Insights.
+
+## 12. Read BI-ready data
+
+```bash
+curl http://localhost:8000/api/bi/operational-insights
+```
+
+Use this response to explain how Power BI can consume a flat API dataset as a web data source.
+
+## Optional: Seed demo data
+
+After Docker Compose is running, seed a small demo dataset:
+
+```bash
+python3 scripts/seed_demo_data.py
+```
+
+Then repeat the anomaly, insights and BI-ready endpoint calls.

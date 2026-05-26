@@ -58,6 +58,7 @@ Operational Insights are calculated on demand from existing PostgreSQL data. The
 - `GET /api/insights/summary` returns total event counts, anomaly counts, average power, anomaly rate and top problematic chargers.
 - `GET /api/insights/charger-health` returns one health row per Charger.
 - `GET /api/insights/anomaly-rate` returns anomaly rate and severity distribution.
+- `GET /api/bi/operational-insights` returns flat BI-ready records for Power BI or similar reporting tools.
 
 Charger health is calculated with simple deterministic rules:
 

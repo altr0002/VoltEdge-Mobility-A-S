@@ -77,6 +77,8 @@ def test_charger_health_returns_health_state_per_charger():
     _post_telemetry("CHG-001", "CHARGING", 42.5)
     _post_telemetry("CHG-002", "FAULTED", 0)
     _post_telemetry("CHG-003", "CHARGING", 0)
+    _post_telemetry("CHG-004", "UNAVAILABLE", 0)
+    _post_telemetry("CHG-005", "OFFLINE", 0)
 
     response = client.get("/api/insights/charger-health")
 
@@ -91,6 +93,10 @@ def test_charger_health_returns_health_state_per_charger():
     assert health_by_charger["CHG-002"]["high_severity_anomalies"] == 1
     assert health_by_charger["CHG-003"]["health_state"] == "WARNING"
     assert health_by_charger["CHG-003"]["latest_status"] == "CHARGING"
+    assert health_by_charger["CHG-004"]["health_state"] == "WARNING"
+    assert health_by_charger["CHG-004"]["latest_status"] == "UNAVAILABLE"
+    assert health_by_charger["CHG-005"]["health_state"] == "CRITICAL"
+    assert health_by_charger["CHG-005"]["latest_status"] == "OFFLINE"
 
 
 def test_anomaly_rate_returns_rate_and_severity_distribution():
@@ -110,3 +116,42 @@ def test_anomaly_rate_returns_rate_and_severity_distribution():
             "MEDIUM": 1,
         },
     }
+
+
+def test_bi_operational_insights_returns_flat_power_bi_ready_records():
+    _post_telemetry("CHG-001", "CHARGING", 42.5)
+    _post_telemetry("CHG-002", "FAULTED", 0, "OVER_TEMPERATURE")
+    _post_telemetry("CHG-003", "CHARGING", 0)
+
+    response = client.get("/api/bi/operational-insights")
+
+    assert response.status_code == 200
+    records = {
+        record["charger_id"]: record
+        for record in response.json()
+    }
+    assert records["CHG-001"] == {
+        "charger_id": "CHG-001",
+        "latest_status": "CHARGING",
+        "total_events": 1,
+        "total_anomalies": 0,
+        "high_severity_anomalies": 0,
+        "average_power_kw": 42.5,
+        "anomaly_rate_percent": 0.0,
+        "health_state": "HEALTHY",
+    }
+    assert records["CHG-002"]["latest_status"] == "FAULTED"
+    assert records["CHG-002"]["total_anomalies"] == 2
+    assert records["CHG-002"]["high_severity_anomalies"] == 2
+    assert records["CHG-002"]["anomaly_rate_percent"] == 200.0
+    assert records["CHG-002"]["health_state"] == "CRITICAL"
+    assert records["CHG-003"]["total_anomalies"] == 1
+    assert records["CHG-003"]["anomaly_rate_percent"] == 100.0
+    assert records["CHG-003"]["health_state"] == "WARNING"
+
+
+def test_bi_operational_insights_handles_zero_telemetry_events():
+    response = client.get("/api/bi/operational-insights")
+
+    assert response.status_code == 200
+    assert response.json() == []

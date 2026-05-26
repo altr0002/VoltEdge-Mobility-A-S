@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.api.anomalies import router as anomalies_router
+from app.api.bi import router as bi_router
 from app.api.health import router as health_router
 from app.api.insights import router as insights_router
 from app.api.telemetry import router as telemetry_router
@@ -27,3 +28,4 @@ app.include_router(health_router, prefix="/api")
 app.include_router(telemetry_router, prefix="/api")
 app.include_router(anomalies_router, prefix="/api")
 app.include_router(insights_router, prefix="/api")
+app.include_router(bi_router, prefix="/api")

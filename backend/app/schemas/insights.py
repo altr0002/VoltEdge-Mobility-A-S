@@ -34,6 +34,19 @@ class ChargerHealthInsightRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class BiOperationalInsightRead(BaseModel):
+    charger_id: str
+    latest_status: ChargerStatus
+    total_events: int
+    total_anomalies: int
+    high_severity_anomalies: int
+    average_power_kw: float
+    anomaly_rate_percent: float
+    health_state: HealthState
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class AnomalyRateInsightRead(BaseModel):
     total_telemetry_events: int
     total_anomalies: int
