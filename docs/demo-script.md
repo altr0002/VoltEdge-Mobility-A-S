@@ -1,12 +1,33 @@
 # Demo Script
 
-## 1. Start the platform
+## 1. SSH into the virtual machine
 
 ```bash
-docker compose up --build
+ssh <user>@<VM-IP>
 ```
 
-## 2. Verify API health
+## 2. Pull the newest code
+
+```bash
+cd ~/voltedge
+git pull
+```
+
+If the VM project folder was copied manually instead of cloned with Git, copy the newest repository files to the VM before running the Docker Compose commands.
+
+## 3. Start the platform on the VM
+
+```bash
+docker compose up -d --build
+```
+
+## 4. Check containers
+
+```bash
+docker compose ps
+```
+
+## 5. Verify API health from inside the VM
 
 ```bash
 curl http://localhost:8000/api/health
@@ -14,7 +35,13 @@ curl http://localhost:8000/api/health
 
 Expected result: the API returns `status: ok`.
 
-## 3. Submit normal charger telemetry
+## 6. Open Swagger from browser
+
+```text
+http://<VM-IP>:8000/docs
+```
+
+## 7. Submit normal charger telemetry
 
 ```bash
 curl -X POST http://localhost:8000/api/telemetry \
@@ -29,7 +56,7 @@ curl -X POST http://localhost:8000/api/telemetry \
   }'
 ```
 
-## 4. Read stored telemetry
+## 8. Read stored telemetry
 
 ```bash
 curl http://localhost:8000/api/telemetry
@@ -37,7 +64,7 @@ curl http://localhost:8000/api/telemetry
 
 Use this response to show that the API validates operational telemetry and stores it in PostgreSQL.
 
-## 5. Submit faulty charger telemetry
+## 9. Submit faulty charger telemetry
 
 ```bash
 curl -X POST http://localhost:8000/api/telemetry \
@@ -52,10 +79,26 @@ curl -X POST http://localhost:8000/api/telemetry \
   }'
 ```
 
-## 6. Read detected anomalies
+## 10. Read detected anomalies
 
 ```bash
 curl http://localhost:8000/api/anomalies
 ```
 
-Use this response to show the Sprint 2 flow: TelemetryEvent -> AnalyticsDomainService -> Anomaly -> GET /api/anomalies.
+Use this response to show the flow: TelemetryEvent -> AnalyticsDomainService -> Anomaly -> GET /api/anomalies.
+
+## 11. Read operational insights
+
+```bash
+curl http://localhost:8000/api/insights/summary
+```
+
+```bash
+curl http://localhost:8000/api/insights/charger-health
+```
+
+```bash
+curl http://localhost:8000/api/insights/anomaly-rate
+```
+
+Use these responses to show the full MVP value chain: Telemetry Monitoring -> Anomaly Detection -> Operational Insights.

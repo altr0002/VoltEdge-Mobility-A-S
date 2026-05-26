@@ -33,6 +33,24 @@ curl http://localhost:8000/api/telemetry
 curl http://localhost:8000/api/anomalies
 ```
 
+## Operational Insights Summary
+
+```bash
+curl http://localhost:8000/api/insights/summary
+```
+
+## Charger Health
+
+```bash
+curl http://localhost:8000/api/insights/charger-health
+```
+
+## Anomaly Rate
+
+```bash
+curl http://localhost:8000/api/insights/anomaly-rate
+```
+
 ## Example With ErrorCode
 
 ```bash
@@ -54,6 +72,10 @@ This telemetry event can create multiple anomalies because it has both `FAULTED`
 curl http://localhost:8000/api/anomalies
 ```
 
+```bash
+curl http://localhost:8000/api/insights/summary
+```
+
 ## Example Power Anomaly
 
 ```bash
@@ -71,4 +93,8 @@ curl -X POST http://localhost:8000/api/telemetry \
 
 ```bash
 curl http://localhost:8000/api/anomalies
+```
+
+```bash
+curl http://localhost:8000/api/insights/charger-health
 ```

@@ -6,7 +6,7 @@ Systemet følger værdikæden:
 
 Telemetry Monitoring -> Anomaly Detection -> Operational Insights
 
-Den nuværende løsning fokuserer på de to første dele: modtagelse og lagring af TelemetryEvent-data samt regelbaseret oprettelse af Anomaly-records. Operational Insights, Power BI-dashboard, RabbitMQ, frontend, alerting, authentication og CI/CD er ikke en del af den nuværende implementation.
+Den nuværende løsning implementerer hele MVP-værdikæden i en simpel backend: modtagelse og lagring af TelemetryEvent-data, regelbaseret oprettelse af Anomaly-records og API-baserede Operational Insights. Power BI-dashboard, RabbitMQ, frontend, alerting, authentication og CI/CD er ikke en del af den nuværende implementation.
 
 ## Funktionalitet
 
@@ -14,9 +14,9 @@ Den nuværende løsning fokuserer på de to første dele: modtagelse og lagring 
 - PostgreSQL-database til lagring af TelemetryEvent- og Anomaly-records.
 - SQLAlchemy som persistence layer.
 - Pydantic schemas til validering af API-requests og responses.
-- AnalyticsDomainService til regelbaseret anomaly detection.
+- AnalyticsDomainService til regelbaseret anomaly detection og simple operational insights.
 - Docker Compose-stack med backend- og PostgreSQL-services.
-- Pytest-tests for telemetry flow, anomaly detection og API-endpoints.
+- Pytest-tests for telemetry flow, anomaly detection, operational insights og API-endpoints.
 
 ## Domænemodel
 
@@ -36,7 +36,7 @@ Centrale domænebegreber:
 - OperationalInsight
 - Alert
 
-I den nuværende implementation er MonitoringRule repræsenteret som simple regler i AnalyticsDomainService. OperationalInsight og Alert er medtaget som fremtidige domænebegreber, men er ikke implementeret endnu.
+I den nuværende implementation er MonitoringRule repræsenteret som simple regler i AnalyticsDomainService. OperationalInsight er implementeret som read models/API-responses baseret på eksisterende TelemetryEvent- og Anomaly-data. Alert er et fremtidigt domænebegreb, men er ikke implementeret endnu.
 
 ## Arkitekturoverblik
 
@@ -56,10 +56,13 @@ AnalyticsDomainService
 Anomaly persistence
         |
         v
-GET /api/anomalies
+Operational Insights
+        |
+        v
+GET /api/insights/*
 ```
 
-Når et TelemetryEvent oprettes via API'et, gemmes eventet først i PostgreSQL. Derefter evaluerer AnalyticsDomainService eventet mod de simple overvågningsregler. Hvis en regel matcher, gemmes en eller flere Anomaly-records i databasen.
+Når et TelemetryEvent oprettes via API'et, gemmes eventet først i PostgreSQL. Derefter evaluerer AnalyticsDomainService eventet mod de simple overvågningsregler. Hvis en regel matcher, gemmes en eller flere Anomaly-records i databasen. Operational Insights beregnes som read-only API-responses oven på de eksisterende TelemetryEvent- og Anomaly-tabeller.
 
 ## Anomaly Detection-regler
 
@@ -110,7 +113,47 @@ README.md
 - Docker og Docker Compose
 - Pytest
 
-## Opsætning
+## Kørsel på virtuel maskine
+
+MVP'en er designet til at blive demonstreret på projektets virtuelle maskine. Docker Compose kører både FastAPI-backend og PostgreSQL på VM'en.
+
+SSH ind på VM'en:
+
+```bash
+ssh <user>@<VM-IP>
+```
+
+Hent nyeste kode:
+
+```bash
+git pull
+```
+
+Start applikationen på VM'en:
+
+```bash
+docker compose up -d --build
+```
+
+Tjek containerne:
+
+```bash
+docker compose ps
+```
+
+Tjek API health inde fra VM'en:
+
+```bash
+curl http://localhost:8000/api/health
+```
+
+Swagger UI kan åbnes fra browseren:
+
+```text
+http://<VM-IP>:8000/docs
+```
+
+## Lokal opsætning
 
 Kopier eksempelmiljøfilen, hvis porte eller credentials skal tilpasses:
 
@@ -151,6 +194,9 @@ docker compose down -v
 | GET | `/api/telemetry` | Lister gemte TelemetryEvents |
 | GET | `/api/anomalies` | Lister detekterede Anomalies |
 | GET | `/api/anomalies/{id}` | Henter én detekteret Anomaly |
+| GET | `/api/insights/summary` | Viser samlet operationel status |
+| GET | `/api/insights/charger-health` | Viser health state per Charger |
+| GET | `/api/insights/anomaly-rate` | Viser anomaly rate og severity distribution |
 
 API-dokumentation kan åbnes i browseren:
 
@@ -206,6 +252,24 @@ List detekterede Anomalies:
 
 ```bash
 curl http://localhost:8000/api/anomalies
+```
+
+Hent samlet OperationalInsight summary:
+
+```bash
+curl http://localhost:8000/api/insights/summary
+```
+
+Hent charger health:
+
+```bash
+curl http://localhost:8000/api/insights/charger-health
+```
+
+Hent anomaly rate:
+
+```bash
+curl http://localhost:8000/api/insights/anomaly-rate
 ```
 
 ## Lokale tests

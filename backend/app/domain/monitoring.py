@@ -31,6 +31,12 @@ class AnomalySeverity(str, Enum):
     MEDIUM = "MEDIUM"
 
 
+class HealthState(str, Enum):
+    HEALTHY = "HEALTHY"
+    WARNING = "WARNING"
+    CRITICAL = "CRITICAL"
+
+
 @dataclass(frozen=True)
 class PowerMeasurement:
     power_kw: float
@@ -65,3 +71,39 @@ class Anomaly:
     severity: AnomalySeverity
     description: str
     detected_at: datetime
+
+
+@dataclass(frozen=True)
+class TopProblematicCharger:
+    charger_id: str
+    total_anomalies: int
+
+
+@dataclass(frozen=True)
+class OperationalInsightSummary:
+    total_telemetry_events: int
+    total_anomalies: int
+    chargers_with_anomalies: int
+    faulted_chargers: int
+    average_power_kw: float
+    anomaly_rate_percent: float
+    top_problematic_chargers: list[TopProblematicCharger]
+
+
+@dataclass(frozen=True)
+class ChargerHealthInsight:
+    charger_id: str
+    latest_status: ChargerStatus
+    total_events: int
+    total_anomalies: int
+    high_severity_anomalies: int
+    average_power_kw: float
+    health_state: HealthState
+
+
+@dataclass(frozen=True)
+class AnomalyRateInsight:
+    total_telemetry_events: int
+    total_anomalies: int
+    anomaly_rate_percent: float
+    severity_distribution: dict[AnomalySeverity, int]

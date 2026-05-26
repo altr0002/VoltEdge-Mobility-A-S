@@ -6,7 +6,7 @@ The MVP follows this value chain:
 
 Telemetry Monitoring -> Anomaly Detection -> Operational Insights
 
-Sprint 1 implemented Telemetry Monitoring. Sprint 2 implements Anomaly Detection through a domain service. OperationalInsight generation, BI dashboards, messaging, frontend, alerting, authentication and CI/CD are intentionally left for later milestones.
+The current MVP implements Telemetry Monitoring, Anomaly Detection and read-only Operational Insights. BI dashboards, messaging, frontend, alerting, authentication and CI/CD are intentionally left out of scope.
 
 ## Components
 
@@ -14,7 +14,7 @@ Sprint 1 implemented Telemetry Monitoring. Sprint 2 implements Anomaly Detection
 - PostgreSQL stores TelemetryEvent and Anomaly records for Charger and Connector monitoring.
 - SQLAlchemy provides persistence mapping between the API and PostgreSQL.
 - Pydantic validates inbound telemetry data.
-- AnalyticsDomainService evaluates stored TelemetryEvent data against simple monitoring rules.
+- AnalyticsDomainService evaluates stored TelemetryEvent data against simple monitoring rules and calculates OperationalInsight read models.
 - Docker Compose runs the backend and PostgreSQL services together.
 
 ## Domain Concepts
@@ -28,7 +28,8 @@ Sprint 1 implemented Telemetry Monitoring. Sprint 2 implements Anomaly Detection
 - Heartbeat is represented by `heartbeat_at`.
 - Anomaly represents a detected operational issue from telemetry.
 - MonitoringRule is represented by simple rule logic in the AnalyticsDomainService.
-- Alert and OperationalInsight are future concepts for the next value-chain steps.
+- OperationalInsight is represented by API read models calculated from TelemetryEvent and Anomaly data.
+- Alert is a future concept and is not implemented.
 
 ## Data Flow
 
@@ -39,6 +40,7 @@ Sprint 1 implemented Telemetry Monitoring. Sprint 2 implements Anomaly Detection
 5. If a rule detects an operational issue, the backend stores one or more Anomaly records.
 6. Operators can read stored telemetry through `GET /api/telemetry`.
 7. Operators can read detected anomalies through `GET /api/anomalies`.
+8. Operators can read operational insights through `GET /api/insights/summary`, `GET /api/insights/charger-health` and `GET /api/insights/anomaly-rate`.
 
 ## Anomaly Detection Rules
 
@@ -48,3 +50,21 @@ Sprint 1 implemented Telemetry Monitoring. Sprint 2 implements Anomaly Detection
 | Error code detected | `error_code` is not null | `ERROR_CODE_DETECTED` | `HIGH` |
 | Power anomaly | `status` is `CHARGING` and `power_kw` is `0` | `POWER_ANOMALY` | `MEDIUM` |
 | Charger unavailable | `status` is `UNAVAILABLE` or `OFFLINE` | `CHARGER_UNAVAILABLE` | `MEDIUM` |
+
+## Operational Insights
+
+Operational Insights are calculated on demand from existing PostgreSQL data. The MVP does not create an `operational_insights` table.
+
+- `GET /api/insights/summary` returns total event counts, anomaly counts, average power, anomaly rate and top problematic chargers.
+- `GET /api/insights/charger-health` returns one health row per Charger.
+- `GET /api/insights/anomaly-rate` returns anomaly rate and severity distribution.
+
+Charger health is calculated with simple deterministic rules:
+
+- `CRITICAL` if latest status is `FAULTED` or `OFFLINE`, or the charger has at least one `HIGH` severity anomaly.
+- `WARNING` if latest status is `UNAVAILABLE`, or the charger has `MEDIUM` severity anomalies.
+- `HEALTHY` otherwise.
+
+## Sprint 3: Operational Insights
+
+Sprint 3 completes the MVP value chain by exposing simple operational insight endpoints based on the existing TelemetryEvent and Anomaly data. The implementation stays read-only for insights and does not introduce Power BI, frontend, messaging, background jobs or an `operational_insights` database table.
