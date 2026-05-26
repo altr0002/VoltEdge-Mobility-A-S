@@ -1,23 +1,24 @@
 # VoltEdge Mobility A/S - Operational Monitoring
 
-VoltEdge Operational Monitoring is an MVP for monitoring EV charger operations. The first milestone implements Telemetry Monitoring, the first step in the value chain:
+VoltEdge Operational Monitoring is an MVP for monitoring EV charger operations. Sprint 1 implemented Telemetry Monitoring, and Sprint 2 adds Anomaly Detection:
 
 Telemetry Monitoring -> Anomaly Detection -> Operational Insights
 
-Anomaly detection, analytics services, Power BI dashboards, RabbitMQ, frontend and CI/CD are planned for later milestones and are not implemented yet.
+Operational Insights, Power BI dashboards, RabbitMQ, frontend, alerting, authentication and CI/CD are planned for later milestones and are not implemented yet.
 
 ## Architecture Overview
 
 The MVP contains:
 
 - FastAPI backend for the Operational Monitoring API.
-- PostgreSQL database for storing TelemetryEvent records.
+- PostgreSQL database for storing TelemetryEvent and Anomaly records.
 - SQLAlchemy persistence layer.
 - Pydantic schemas for request validation.
+- AnalyticsDomainService for simple anomaly detection rules.
 - Docker Compose stack with backend and PostgreSQL services.
 - Pytest tests for the API.
 
-Domain concepts used in this milestone include Charger, Connector, TelemetryEvent, ChargerStatus, ErrorCode, PowerMeasurement and Heartbeat. MonitoringRule, Anomaly, Alert and OperationalInsight remain future concepts.
+Domain concepts used in this milestone include Charger, Connector, TelemetryEvent, ChargerStatus, ErrorCode, PowerMeasurement, Heartbeat and Anomaly. MonitoringRule is represented by simple rules in the AnalyticsDomainService. Alert and OperationalInsight remain future concepts.
 
 ## Project Structure
 
@@ -82,6 +83,8 @@ docker compose down -v
 | GET | `/api/health` | Check API health |
 | POST | `/api/telemetry` | Store a TelemetryEvent |
 | GET | `/api/telemetry` | List stored TelemetryEvents |
+| GET | `/api/anomalies` | List detected Anomalies |
+| GET | `/api/anomalies/{id}` | Get one detected Anomaly |
 
 ## Curl Examples
 
@@ -110,6 +113,25 @@ List stored TelemetryEvents:
 
 ```bash
 curl http://localhost:8000/api/telemetry
+```
+
+Create a faulty TelemetryEvent and list detected Anomalies:
+
+```bash
+curl -X POST http://localhost:8000/api/telemetry \
+  -H "Content-Type: application/json" \
+  -d '{
+    "charger_id": "CHG-002",
+    "connector_id": "CONN-2",
+    "status": "FAULTED",
+    "power_kw": 0,
+    "error_code": "OVER_TEMPERATURE",
+    "heartbeat_at": "2026-05-25T10:20:00Z"
+  }'
+```
+
+```bash
+curl http://localhost:8000/api/anomalies
 ```
 
 ## Local Tests

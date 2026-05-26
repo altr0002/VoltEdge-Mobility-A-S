@@ -14,7 +14,7 @@ curl http://localhost:8000/api/health
 
 Expected result: the API returns `status: ok`.
 
-## 3. Submit charger telemetry
+## 3. Submit normal charger telemetry
 
 ```bash
 curl -X POST http://localhost:8000/api/telemetry \
@@ -35,4 +35,27 @@ curl -X POST http://localhost:8000/api/telemetry \
 curl http://localhost:8000/api/telemetry
 ```
 
-Use this response to show that the API validates operational telemetry, stores it in PostgreSQL and exposes BI-ready event data for later analytics.
+Use this response to show that the API validates operational telemetry and stores it in PostgreSQL.
+
+## 5. Submit faulty charger telemetry
+
+```bash
+curl -X POST http://localhost:8000/api/telemetry \
+  -H "Content-Type: application/json" \
+  -d '{
+    "charger_id": "CHG-002",
+    "connector_id": "CONN-2",
+    "status": "FAULTED",
+    "power_kw": 0,
+    "error_code": "OVER_TEMPERATURE",
+    "heartbeat_at": "2026-05-25T10:20:00Z"
+  }'
+```
+
+## 6. Read detected anomalies
+
+```bash
+curl http://localhost:8000/api/anomalies
+```
+
+Use this response to show the Sprint 2 flow: TelemetryEvent -> AnalyticsDomainService -> Anomaly -> GET /api/anomalies.
