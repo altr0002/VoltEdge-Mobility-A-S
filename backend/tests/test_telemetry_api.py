@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 from app.infrastructure.database import Base, engine
 from app.main import app
 
-client = TestClient(app)
+telemetry_client = TestClient(app)
 
 
 @pytest.fixture(autouse=True)
@@ -20,17 +20,11 @@ def reset_database():
 
 
 def test_health_endpoint_returns_ok():
-    response = client.get("/api/health")
+    response = telemetry_client.get("/api/health")
 
     assert response.status_code == 200
     assert response.json()["status"] == "ok"
-
-
-def test_dashboard_page_is_served():
-    response = client.get("/dashboard")
-
-    assert response.status_code == 200
-    assert "VoltEdge Dashboard" in response.text
+    assert response.json()["service"] == "voltedge-telemetry-service"
 
 
 def test_create_and_list_telemetry_events():
@@ -43,7 +37,7 @@ def test_create_and_list_telemetry_events():
         "heartbeat_at": "2026-05-25T10:15:00Z",
     }
 
-    create_response = client.post("/api/telemetry", json=payload)
+    create_response = telemetry_client.post("/api/telemetry", json=payload)
 
     assert create_response.status_code == 201
     created_event = create_response.json()
@@ -51,7 +45,7 @@ def test_create_and_list_telemetry_events():
     assert created_event["charger_id"] == "CHG-001"
     assert created_event["status"] == "CHARGING"
 
-    list_response = client.get("/api/telemetry")
+    list_response = telemetry_client.get("/api/telemetry")
 
     assert list_response.status_code == 200
     stored_events = list_response.json()
@@ -70,6 +64,11 @@ def test_rejects_invalid_power_measurement():
         "heartbeat_at": "2026-05-25T10:15:00Z",
     }
 
-    response = client.post("/api/telemetry", json=payload)
+    response = telemetry_client.post("/api/telemetry", json=payload)
 
     assert response.status_code == 422
+
+
+def test_telemetry_service_does_not_serve_dashboard_or_insights():
+    assert telemetry_client.get("/dashboard").status_code == 404
+    assert telemetry_client.get("/api/insights/summary").status_code == 404

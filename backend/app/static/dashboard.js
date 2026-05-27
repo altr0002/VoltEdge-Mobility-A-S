@@ -354,7 +354,7 @@ async function loadDashboard() {
         fetchJson("/api/insights/summary"),
         fetchJson("/api/insights/anomaly-rate"),
         fetchJson("/api/bi/operational-insights"),
-        fetchJson("/api/telemetry"),
+        fetchJson("/api/dashboard/telemetry"),
         fetchJson("/api/anomalies"),
       ]);
 

@@ -1,20 +1,11 @@
 from contextlib import asynccontextmanager
-from pathlib import Path
 
 from fastapi import FastAPI
-from fastapi.responses import FileResponse, RedirectResponse
-from fastapi.staticfiles import StaticFiles
 
-from app.api.anomalies import router as anomalies_router
-from app.api.bi import router as bi_router
 from app.api.health import router as health_router
-from app.api.insights import router as insights_router
 from app.api.telemetry import router as telemetry_router
 from app.infrastructure.database import Base, engine
 from app.infrastructure import models
-
-
-STATIC_DIR = Path(__file__).parent / "static"
 
 
 @asynccontextmanager
@@ -24,25 +15,12 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="VoltEdge Operational Monitoring API",
-    description="Operational monitoring API for EV charger telemetry, anomalies and insights.",
-    version="0.3.0",
+    title="VoltEdge Telemetry Service",
+    description="Telemetry ingestion service for EV charger operational data.",
+    version="0.4.0",
     lifespan=lifespan,
 )
+app.state.service_name = "voltedge-telemetry-service"
 
 app.include_router(health_router, prefix="/api")
 app.include_router(telemetry_router, prefix="/api")
-app.include_router(anomalies_router, prefix="/api")
-app.include_router(insights_router, prefix="/api")
-app.include_router(bi_router, prefix="/api")
-app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
-
-
-@app.get("/", include_in_schema=False)
-def redirect_to_dashboard() -> RedirectResponse:
-    return RedirectResponse(url="/dashboard")
-
-
-@app.get("/dashboard", include_in_schema=False)
-def get_dashboard() -> FileResponse:
-    return FileResponse(STATIC_DIR / "dashboard.html")

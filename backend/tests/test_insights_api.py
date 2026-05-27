@@ -6,9 +6,11 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.infrastructure.database import Base, engine
-from app.main import app
+from app.insights_main import app as insights_app
+from app.main import app as telemetry_app
 
-client = TestClient(app)
+insights_client = TestClient(insights_app)
+telemetry_client = TestClient(telemetry_app)
 
 
 @pytest.fixture(autouse=True)
@@ -34,11 +36,11 @@ def _post_telemetry(
         "heartbeat_at": "2026-05-25T10:15:00Z",
     }
 
-    return client.post("/api/telemetry", json=payload)
+    return telemetry_client.post("/api/telemetry", json=payload)
 
 
 def test_summary_handles_zero_telemetry_events():
-    response = client.get("/api/insights/summary")
+    response = insights_client.get("/api/insights/summary")
 
     assert response.status_code == 200
     assert response.json() == {
@@ -57,7 +59,7 @@ def test_summary_returns_operational_insights():
     _post_telemetry("CHG-002", "FAULTED", 0)
     _post_telemetry("CHG-003", "CHARGING", 0)
 
-    response = client.get("/api/insights/summary")
+    response = insights_client.get("/api/insights/summary")
 
     assert response.status_code == 200
     summary = response.json()
@@ -80,7 +82,7 @@ def test_charger_health_returns_health_state_per_charger():
     _post_telemetry("CHG-004", "UNAVAILABLE", 0)
     _post_telemetry("CHG-005", "OFFLINE", 0)
 
-    response = client.get("/api/insights/charger-health")
+    response = insights_client.get("/api/insights/charger-health")
 
     assert response.status_code == 200
     health_by_charger = {
@@ -104,7 +106,7 @@ def test_anomaly_rate_returns_rate_and_severity_distribution():
     _post_telemetry("CHG-002", "FAULTED", 0)
     _post_telemetry("CHG-003", "CHARGING", 0)
 
-    response = client.get("/api/insights/anomaly-rate")
+    response = insights_client.get("/api/insights/anomaly-rate")
 
     assert response.status_code == 200
     assert response.json() == {
@@ -123,7 +125,7 @@ def test_bi_operational_insights_returns_flat_power_bi_ready_records():
     _post_telemetry("CHG-002", "FAULTED", 0, "OVER_TEMPERATURE")
     _post_telemetry("CHG-003", "CHARGING", 0)
 
-    response = client.get("/api/bi/operational-insights")
+    response = insights_client.get("/api/bi/operational-insights")
 
     assert response.status_code == 200
     records = {
@@ -157,7 +159,37 @@ def test_bi_operational_insights_returns_flat_power_bi_ready_records():
 
 
 def test_bi_operational_insights_handles_zero_telemetry_events():
-    response = client.get("/api/bi/operational-insights")
+    response = insights_client.get("/api/bi/operational-insights")
 
     assert response.status_code == 200
     assert response.json() == []
+
+
+def test_insights_service_serves_dashboard_and_read_only_telemetry():
+    _post_telemetry("CHG-001", "CHARGING", 42.5)
+
+    dashboard_response = insights_client.get("/dashboard")
+    telemetry_response = insights_client.get("/api/telemetry")
+    dashboard_telemetry_response = insights_client.get("/api/dashboard/telemetry")
+
+    assert dashboard_response.status_code == 200
+    assert "VoltEdge Dashboard" in dashboard_response.text
+    assert telemetry_response.status_code == 200
+    assert dashboard_telemetry_response.status_code == 200
+    assert telemetry_response.json()[0]["charger_id"] == "CHG-001"
+
+
+def test_insights_service_does_not_accept_telemetry_writes():
+    response = insights_client.post(
+        "/api/telemetry",
+        json={
+            "charger_id": "CHG-001",
+            "connector_id": "CONN-1",
+            "status": "CHARGING",
+            "power_kw": 42.5,
+            "error_code": None,
+            "heartbeat_at": "2026-05-25T10:15:00Z",
+        },
+    )
+
+    assert response.status_code == 405

@@ -4,12 +4,13 @@ VoltEdge Operational Monitoring MVP er en backend-baseret eksamens-MVP til opera
 
 Projektet demonstrerer, hvordan en fremtidig digital platform kan modtage telemetridata fra ladere, gemme data i PostgreSQL, udføre regelbaseret anomaly detection og eksponere operational insights via API'er.
 
-## Bounded Context
+## Bounded Contexts
 
-Den primære bounded context er:
+MVP'en er opdelt i to microservices med hver sit bounded context:
 
 ```text
-Operational Monitoring
+Telemetry Collection
+Operational Insights
 ```
 
 ## MVP Value Chain
@@ -21,6 +22,8 @@ Telemetry Monitoring -> Anomaly Detection -> Operational Insights
 ## Implementeret Funktionalitet
 
 - Telemetry ingestion via FastAPI.
+- Separat Telemetry Service til indsamling og persistence af livedata.
+- Separat Insights Service til KPI'er, anomalies, risk score og dashboard.
 - Persistence af TelemetryEvent-data i PostgreSQL.
 - Pydantic-validering af API-requests og responses.
 - SQLAlchemy som persistence layer.
@@ -32,7 +35,7 @@ Telemetry Monitoring -> Anomaly Detection -> Operational Insights
 - Telemetry simulator til realistiske demo-data via VM-API'et.
 - RabbitMQ-kø til `telemetry.created` events efter database-persistence.
 - Browserbaseret dashboard til livedata, anomalies, KPI'er og trends.
-- Docker Compose runtime med backend, PostgreSQL og RabbitMQ.
+- Docker Compose runtime med to FastAPI-services, PostgreSQL og RabbitMQ.
 - Pytest-tests for telemetry, anomalies, insights og BI endpoint.
 - GitHub Actions CI til testkørsel.
 - VM-baseret demo flow.
@@ -59,7 +62,11 @@ Dette er ikke en fuld produktionsplatform. Følgende er bevidst uden for scope:
 Client / Charger Simulator
         |
         v
-FastAPI API
+Public Gateway :8000
+        |\
+        | \-> Insights Service :8001
+        v
+Telemetry Service :8002
         |
         v
 TelemetryEvent persistence
@@ -72,10 +79,13 @@ AnalyticsDomainService
 Anomaly persistence
         |
         v
+Insights Service :8001
+        |
+        v
 Operational Insights / Dashboard / BI-ready API
 ```
 
-FastAPI-backenden er det operationelle system. Dashboardet og BI-endpointet læser fra API-laget, mens PostgreSQL fortsat er source of truth. RabbitMQ bruges som en simpel integrationskø for telemetry events efter persistence.
+Telemetry Service er write-side for livedata. Insights Service er read-side for KPI'er, anomalies, risk score og dashboard. Gatewayen er kun en simpel HTTP-indgang på VM'ens åbne port `8000`, så browser og simulator kan bruge samme offentlige adresse. PostgreSQL fungerer som fælles persistence/read model i MVP'en, mens RabbitMQ bruges som integrationskø for `telemetry.created` events efter persistence.
 
 ## Projektstruktur
 
@@ -83,6 +93,7 @@ FastAPI-backenden er det operationelle system. Dashboardet og BI-endpointet læs
 backend/
   app/
     main.py
+    insights_main.py
     api/
     domain/
     infrastructure/
@@ -97,6 +108,9 @@ database/
 scripts/
   seed_demo_data.py
   simulate_demo_data.py
+
+gateway/
+  nginx.conf
 
 .github/
   workflows/
@@ -124,7 +138,7 @@ cd VoltEdge-Mobility-A-S
 git pull
 ```
 
-Start backend, PostgreSQL og RabbitMQ:
+Start gateway, Telemetry Service, Insights Service, PostgreSQL og RabbitMQ:
 
 ```bash
 docker compose up -d --build
@@ -136,16 +150,20 @@ Tjek containerne:
 docker compose ps
 ```
 
-Tjek API health fra VM'en:
+Tjek service health fra VM'en:
 
 ```bash
 curl http://localhost:8000/api/health
+curl http://localhost:8002/api/health
+curl http://localhost:8001/api/health
 ```
 
 Åbn Swagger UI fra browser:
 
 ```text
-http://<VM-IP>:8000/docs
+Dashboard / Insights via gateway: http://<VM-IP>:8000/docs
+Telemetry Service internt på VM: http://localhost:8002/docs
+Insights Service internt på VM:  http://localhost:8001/docs
 ```
 
 Åbn operational dashboard fra browser:
@@ -235,19 +253,44 @@ alert-service eller integration, kan den læses asynkront uden at blokere API'et
 I MVP'en demonstrerer køen, hvordan Operational Monitoring kan udvides mod en
 event-driven arkitektur uden at gøre dashboardet eller domænelogikken tungere.
 
+## Microservice Ansvar
+
+Telemetry Service (`localhost:8002` på VM, publiceret via gateway på `:8000/api/telemetry`) har ansvar for:
+
+- `POST /api/telemetry`
+- `GET /api/telemetry`
+- validering af telemetry
+- persistence i PostgreSQL
+- anomaly detection ved ingestion
+- publish af `telemetry.created` til RabbitMQ
+
+Insights Service (`localhost:8001` på VM, publiceret via gateway på `:8000`) har ansvar for:
+
+- `GET /dashboard`
+- `GET /api/anomalies`
+- `GET /api/insights/summary`
+- `GET /api/insights/charger-health`
+- `GET /api/insights/anomaly-rate`
+- `GET /api/bi/operational-insights`
+- read-only `GET /api/telemetry` til dashboardets live/trend views
+- read-only `GET /api/dashboard/telemetry` til gateway/dashboard
+- KPI'er, anomaly views og incident risk score
+
 ## API Endpoints
 
 | Method | Endpoint | Beskrivelse |
 | --- | --- | --- |
-| GET | `/api/health` | Tjekker om API'et kører |
-| POST | `/api/telemetry` | Gemmer et TelemetryEvent og evaluerer anomaly-regler |
-| GET | `/api/telemetry` | Lister gemte TelemetryEvents |
-| GET | `/api/anomalies` | Lister detekterede Anomalies |
-| GET | `/api/anomalies/{id}` | Henter én detekteret Anomaly |
-| GET | `/api/insights/summary` | Viser samlet operationel status |
-| GET | `/api/insights/charger-health` | Viser health state per Charger |
-| GET | `/api/insights/anomaly-rate` | Viser anomaly rate og severity distribution |
-| GET | `/api/bi/operational-insights` | Returnerer flade BI-ready records |
+| GET | `:8000/api/health` | Tjekker den offentlige Insights/gateway-side |
+| POST | `:8000/api/telemetry` | Gemmer et TelemetryEvent i Telemetry Service og evaluerer anomaly-regler |
+| GET | `:8000/api/dashboard/telemetry` | Read-only telemetry til dashboard |
+| GET | `:8000/api/anomalies` | Lister detekterede Anomalies |
+| GET | `:8000/api/anomalies/{id}` | Henter én detekteret Anomaly |
+| GET | `:8000/api/insights/summary` | Viser samlet operationel status |
+| GET | `:8000/api/insights/charger-health` | Viser health state per Charger |
+| GET | `:8000/api/insights/anomaly-rate` | Viser anomaly rate og severity distribution |
+| GET | `:8000/api/bi/operational-insights` | Returnerer flade BI-ready records |
+| GET | `localhost:8002/api/health` | Tjekker Telemetry Service direkte fra VM'en |
+| GET | `localhost:8001/api/health` | Tjekker Insights Service direkte fra VM'en |
 
 ## Curl Eksempler Til Demo
 
@@ -255,6 +298,8 @@ Health check:
 
 ```bash
 curl http://localhost:8000/api/health
+curl http://localhost:8002/api/health
+curl http://localhost:8001/api/health
 ```
 
 Opret et normalt TelemetryEvent:
@@ -317,9 +362,9 @@ curl http://localhost:8000/api/bi/operational-insights
 
 1. Start Docker Compose på VM'en.
 2. Seed demo data eller POST telemetry events manuelt.
-3. Vis `GET /api/telemetry`.
-4. Vis `GET /api/anomalies`.
-5. Vis Operational Insights endpoints.
+3. Vis `GET :8000/api/telemetry`.
+4. Vis `GET :8000/api/anomalies`.
+5. Vis Operational Insights endpoints på `:8000`.
 6. Vis BI-ready endpointet.
 7. Vis at tests passer.
 8. Vis GitHub Actions workflowet i repository.
