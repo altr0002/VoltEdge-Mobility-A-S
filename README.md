@@ -37,7 +37,7 @@ Telemetry Monitoring -> Anomaly Detection -> Operational Insights
 - Browserbaseret dashboard til livedata, anomalies, KPI'er og trends.
 - Docker Compose runtime med to FastAPI-services, PostgreSQL og RabbitMQ.
 - Pytest-tests for telemetry, anomalies, insights og BI endpoint.
-- GitHub Actions CI til testkørsel.
+- GitHub Actions CI/CD til testkørsel og simpel deployment til VM.
 - VM-baseret demo flow.
 
 ## Ikke En Del Af MVP'en
@@ -394,12 +394,30 @@ pytest
 
 Testene bruger SQLite in-memory, så de kan køres uden Docker eller PostgreSQL.
 
-## GitHub Actions CI
+## GitHub Actions CI/CD
 
-Repositoryet indeholder et simpelt CI-workflow:
+Repositoryet indeholder et simpelt CI/CD-workflow:
 
 ```text
 .github/workflows/ci.yml
 ```
 
-Workflowet kører på `push` og `pull_request`, installerer backend dependencies og kører `pytest`.
+Workflowet kører tests på `push` og `pull_request`, installerer backend dependencies og kører `pytest`.
+
+Når tests er grønne på `main`, deployer workflowet automatisk til VM'en via SSH:
+
+```bash
+cd /home/azureuser/voltedge
+git pull --ff-only origin main
+sudo docker compose up -d --build
+```
+
+GitHub Actions kræver disse repository secrets:
+
+```text
+VM_HOST
+VM_USER
+VM_SSH_KEY
+```
+
+Det er en simpel CD-løsning inden for MVP-scope. Den bruger ikke Kubernetes, Terraform eller container registry.
