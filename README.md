@@ -94,12 +94,6 @@ backend/
 database/
   init.sql
 
-docs/
-  architecture.md
-  api-examples.md
-  demo-script.md
-  power-bi-guide.md
-
 scripts/
   seed_demo_data.py
   simulate_demo_data.py
@@ -358,13 +352,3 @@ Repositoryet indeholder et simpelt CI-workflow:
 ```
 
 Workflowet kører på `push` og `pull_request`, installerer backend dependencies og kører `pytest`.
-
-## Power BI
-
-Power BI kan forbinde til:
-
-```text
-http://<VM-IP>:8000/api/bi/operational-insights
-```
-
-Se [docs/power-bi-guide.md](docs/power-bi-guide.md) for forslag til Power BI-forbindelse og dashboard-visuals.
