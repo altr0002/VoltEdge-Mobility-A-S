@@ -172,6 +172,12 @@ Insights Service internt på VM:  http://localhost:8001/docs
 http://<VM-IP>:8000/dashboard
 ```
 
+Dette dashboard fungerer som MVP'ens simple browserbaserede BI/analytics dashboard. Det visualiserer driftsdata fra ladestandere som KPI'er, anomaly-status, charger health, risk score og seneste telemetry events.
+
+Dashboardet understøtter eksamenskravet om Business Intelligence / analytics visualisering, fordi rå telemetry-data bliver omsat til beslutningsstøtte: driftsteamet kan se hvilke ladestandere der har problemer, hvor ofte anomalies opstår, og hvilke enheder der bør prioriteres.
+
+MVP'en bruger ikke Power BI som selve visualiseringsværktøj. Power BI kan være en naturlig videreudvikling, fordi systemet allerede tilbyder et BI-ready API via `/api/bi/operational-insights`. I denne MVP demonstreres BI-princippet gennem API'et og dashboardet på `/dashboard`.
+
 Åbn RabbitMQ Management UI via SSH tunnel fra din Mac:
 
 ```bash
