@@ -1,5 +1,4 @@
 name: CI
-run-name: Add CI and BI-ready reporting support
 
 on:
   push:
