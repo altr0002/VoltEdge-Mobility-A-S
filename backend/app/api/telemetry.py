@@ -7,6 +7,7 @@ from app.domain.services.analytics_domain_service import AnalyticsDomainService
 from app.infrastructure.anomaly_repository import AnomalyRepository
 from app.infrastructure.database import get_db
 from app.infrastructure.models import TelemetryEventRecord
+from app.infrastructure.rabbitmq_publisher import RabbitMQTelemetryPublisher
 from app.schemas.telemetry import TelemetryEventCreate, TelemetryEventRead
 
 router = APIRouter(prefix="/telemetry", tags=["Telemetry Monitoring"])
@@ -48,6 +49,11 @@ def create_telemetry_event(
         anomaly_repository = AnomalyRepository(db)
         anomaly_repository.add_many(anomalies)
         db.commit()
+
+    RabbitMQTelemetryPublisher().publish_telemetry_created(
+        telemetry_event,
+        anomaly_count=len(anomalies),
+    )
 
     return telemetry_event
 

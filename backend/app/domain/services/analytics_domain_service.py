@@ -10,6 +10,7 @@ from app.domain.monitoring import (
     ChargerHealthInsight,
     ChargerStatus,
     HealthState,
+    IncidentRiskLevel,
     OperationalInsightSummary,
     TelemetryEvent,
     TopProblematicCharger,
@@ -192,22 +193,39 @@ class AnalyticsDomainService:
     ) -> list[BiOperationalInsight]:
         charger_health = self.calculate_charger_health(telemetry_events, anomalies)
 
-        return [
-            BiOperationalInsight(
-                charger_id=health.charger_id,
-                latest_status=health.latest_status,
-                total_events=health.total_events,
-                total_anomalies=health.total_anomalies,
-                high_severity_anomalies=health.high_severity_anomalies,
-                average_power_kw=health.average_power_kw,
-                anomaly_rate_percent=self._anomaly_rate(
-                    health.total_events,
-                    health.total_anomalies,
-                ),
-                health_state=health.health_state,
+        insights: list[BiOperationalInsight] = []
+        for health in charger_health:
+            medium_severity_anomalies = (
+                health.total_anomalies - health.high_severity_anomalies
             )
-            for health in charger_health
-        ]
+            anomaly_rate_percent = self._anomaly_rate(
+                health.total_events,
+                health.total_anomalies,
+            )
+            risk_score = self._incident_risk_score(
+                latest_status=health.latest_status,
+                anomaly_rate_percent=anomaly_rate_percent,
+                high_severity_anomalies=health.high_severity_anomalies,
+                medium_severity_anomalies=medium_severity_anomalies,
+                average_power_kw=health.average_power_kw,
+            )
+
+            insights.append(
+                BiOperationalInsight(
+                    charger_id=health.charger_id,
+                    latest_status=health.latest_status,
+                    total_events=health.total_events,
+                    total_anomalies=health.total_anomalies,
+                    high_severity_anomalies=health.high_severity_anomalies,
+                    average_power_kw=health.average_power_kw,
+                    anomaly_rate_percent=anomaly_rate_percent,
+                    incident_risk_score=risk_score,
+                    incident_risk_level=self._incident_risk_level(risk_score),
+                    health_state=health.health_state,
+                )
+            )
+
+        return insights
 
     @staticmethod
     def _average_power(telemetry_events: list[TelemetryInsightSource]) -> float:
@@ -313,3 +331,50 @@ class AnalyticsDomainService:
             return HealthState.WARNING
 
         return HealthState.HEALTHY
+
+    @staticmethod
+    def _incident_risk_score(
+        latest_status: ChargerStatus,
+        anomaly_rate_percent: float,
+        high_severity_anomalies: int,
+        medium_severity_anomalies: int,
+        average_power_kw: float,
+    ) -> int:
+        status_weight = {
+            ChargerStatus.FAULTED: 35,
+            ChargerStatus.OFFLINE: 35,
+            ChargerStatus.UNAVAILABLE: 20,
+            ChargerStatus.CHARGING: 0,
+            ChargerStatus.AVAILABLE: 0,
+        }[latest_status]
+        anomaly_weight = min(anomaly_rate_percent, 100) * 0.35
+        severity_weight = (high_severity_anomalies * 20) + (
+            medium_severity_anomalies * 8
+        )
+        zero_power_weight = (
+            10
+            if latest_status == ChargerStatus.CHARGING
+            and average_power_kw == 0
+            and (high_severity_anomalies + medium_severity_anomalies) > 0
+            else 0
+        )
+
+        return min(
+            100,
+            round(
+                status_weight
+                + anomaly_weight
+                + severity_weight
+                + zero_power_weight,
+            ),
+        )
+
+    @staticmethod
+    def _incident_risk_level(risk_score: int) -> IncidentRiskLevel:
+        if risk_score >= 70:
+            return IncidentRiskLevel.HIGH
+
+        if risk_score >= 35:
+            return IncidentRiskLevel.MEDIUM
+
+        return IncidentRiskLevel.LOW

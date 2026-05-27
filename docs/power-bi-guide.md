@@ -27,6 +27,8 @@ The endpoint returns a flat list of records with:
 - `high_severity_anomalies`
 - `average_power_kw`
 - `anomaly_rate_percent`
+- `incident_risk_score`
+- `incident_risk_level`
 - `health_state`
 
 ## Suggested Power BI Connection
@@ -44,8 +46,36 @@ The endpoint returns a flat list of records with:
 - Total anomalies
 - Anomaly rate
 - Charger health by `health_state`
-- Top problematic chargers
+- Top problematic chargers by `total_anomalies`
+- Top chargers by `incident_risk_score`
+- Risk level distribution by `incident_risk_level`
 - Average `power_kw`
+
+## Demo Data Simulator
+
+For better Power BI visuals, generate telemetry history through the VM API:
+
+```bash
+python3 scripts/simulate_demo_data.py --base-url http://<VM-IP>:8000
+```
+
+The simulator creates several charger patterns, such as healthy chargers, low
+power output, offline periods, connector failures and thermal faults. This keeps
+the demo inside the Operational Monitoring scope because the simulator only acts
+as a telemetry source. FastAPI, PostgreSQL and AnalyticsDomainService still own
+validation, persistence, anomaly detection and BI-ready insights.
+
+## Incident Risk
+
+`incident_risk_score` is a simple explainable risk model, not a production ML
+pipeline. It combines operational features already present in the MVP:
+
+- latest charger status
+- anomaly rate
+- high and medium severity anomaly counts
+- average power output
+
+Power BI can use this field to rank chargers that need operational attention.
 
 ## Scope
 

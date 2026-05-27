@@ -37,6 +37,12 @@ class HealthState(str, Enum):
     CRITICAL = "CRITICAL"
 
 
+class IncidentRiskLevel(str, Enum):
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+
+
 @dataclass(frozen=True)
 class PowerMeasurement:
     power_kw: float
@@ -110,6 +116,8 @@ class BiOperationalInsight:
     high_severity_anomalies: int
     average_power_kw: float
     anomaly_rate_percent: float
+    incident_risk_score: int
+    incident_risk_level: IncidentRiskLevel
     health_state: HealthState
 
 

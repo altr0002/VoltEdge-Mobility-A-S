@@ -28,7 +28,11 @@ Telemetry Monitoring -> Anomaly Detection -> Operational Insights
 - Persistence af Anomaly-records i PostgreSQL.
 - Operational Insights API baseret på eksisterende telemetry/anomaly-data.
 - BI / Power BI-ready API endpoint.
-- Docker Compose runtime med backend og PostgreSQL.
+- Simpel incident risk score til prioritering af chargers i Power BI.
+- Telemetry simulator til realistiske demo-data via VM-API'et.
+- RabbitMQ-kø til `telemetry.created` events efter database-persistence.
+- Browserbaseret dashboard til livedata, anomalies, KPI'er og trends.
+- Docker Compose runtime med backend, PostgreSQL og RabbitMQ.
 - Pytest-tests for telemetry, anomalies, insights og BI endpoint.
 - GitHub Actions CI til testkørsel.
 - VM-baseret demo flow.
@@ -38,12 +42,13 @@ Telemetry Monitoring -> Anomaly Detection -> Operational Insights
 Dette er ikke en fuld produktionsplatform. Følgende er bevidst uden for scope:
 
 - Real OCPP integration.
-- Frontend dashboard.
+- Stort SPA-frontend med separat frontend-framework.
 - Authentication og authorization.
-- RabbitMQ eller Kafka.
+- Kafka eller event streaming-platform.
 - Billing, payment og partner contracts.
 - Real alert notifications via email/SMS.
 - Production machine learning eller predictive maintenance pipeline.
+- Træning, deployment eller drift af en egentlig ML-model.
 - Kubernetes.
 - Terraform.
 - Production cloud deployment.
@@ -58,7 +63,8 @@ FastAPI API
         |
         v
 TelemetryEvent persistence
-        |
+        |\
+        | \-> RabbitMQ telemetry.created queue
         v
 AnalyticsDomainService
         |
@@ -66,10 +72,10 @@ AnalyticsDomainService
 Anomaly persistence
         |
         v
-Operational Insights / BI-ready API
+Operational Insights / Dashboard / BI-ready API
 ```
 
-FastAPI-backenden er det operationelle system. Power BI kan efterfølgende forbinde til backendens BI-endpoint som en uafhængig analytics- og visualiseringsplatform.
+FastAPI-backenden er det operationelle system. Dashboardet og BI-endpointet læser fra API-laget, mens PostgreSQL fortsat er source of truth. RabbitMQ bruges som en simpel integrationskø for telemetry events efter persistence.
 
 ## Projektstruktur
 
@@ -96,6 +102,7 @@ docs/
 
 scripts/
   seed_demo_data.py
+  simulate_demo_data.py
 
 .github/
   workflows/
@@ -123,7 +130,7 @@ cd VoltEdge-Mobility-A-S
 git pull
 ```
 
-Start backend og PostgreSQL:
+Start backend, PostgreSQL og RabbitMQ:
 
 ```bash
 docker compose up -d --build
@@ -147,6 +154,37 @@ curl http://localhost:8000/api/health
 http://<VM-IP>:8000/docs
 ```
 
+Åbn operational dashboard fra browser:
+
+```text
+http://<VM-IP>:8000/dashboard
+```
+
+Åbn RabbitMQ Management UI via SSH tunnel fra din Mac:
+
+```bash
+ssh -L 15672:localhost:15672 VMVoltEdge
+```
+
+Hold SSH-vinduet åbent, og åbn derefter:
+
+```text
+http://localhost:15672
+```
+
+Login:
+
+```text
+user: voltedge
+password: voltedge
+```
+
+RabbitMQ-køen hedder:
+
+```text
+telemetry.events
+```
+
 ## Demo Data
 
 Når Docker Compose kører på VM'en, kan demo data oprettes med:
@@ -164,6 +202,44 @@ Scriptet opretter eksempeldata for:
 - error_code anomaly
 - CHARGING med `power_kw = 0`
 - UNAVAILABLE/OFFLINE charger
+
+Til Power BI-demo kan der oprettes en større, realistisk telemetry-historik med:
+
+```bash
+python3 scripts/simulate_demo_data.py --base-url http://<VM-IP>:8000
+```
+
+Simulatoren poster events gennem det offentlige API. Derfor bliver data valideret,
+gemt og evalueret af de samme anomaly-regler som almindelig telemetry.
+
+## Incident Risk Score
+
+BI-endpointet returnerer en simpel, forklarbar incident risk score:
+
+```text
+incident_risk_score: 0-100
+incident_risk_level: LOW / MEDIUM / HIGH
+```
+
+Scoren er ikke en production machine learning-model. Den er en ML-inspireret
+analysemodel til MVP'en, hvor kendte driftsfeatures som status, anomaly rate,
+high severity anomalies og power-output omsættes til et prioriteringstal for
+driftsteamet.
+
+## RabbitMQ Event Flow
+
+Når `POST /api/telemetry` modtager et telemetry event, sker der tre ting:
+
+```text
+1. Eventet valideres og gemmes i PostgreSQL.
+2. AnalyticsDomainService evaluerer eventet og gemmer eventuelle anomalies.
+3. Backend publicerer en JSON-besked til RabbitMQ-køen telemetry.events.
+```
+
+RabbitMQ er ikke source of truth. Hvis en besked bruges af en senere worker,
+alert-service eller integration, kan den læses asynkront uden at blokere API'et.
+I MVP'en demonstrerer køen, hvordan Operational Monitoring kan udvides mod en
+event-driven arkitektur uden at gøre dashboardet eller domænelogikken tungere.
 
 ## API Endpoints
 

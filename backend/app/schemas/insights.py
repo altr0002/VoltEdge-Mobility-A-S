@@ -1,6 +1,11 @@
 from pydantic import BaseModel, ConfigDict
 
-from app.domain.monitoring import AnomalySeverity, ChargerStatus, HealthState
+from app.domain.monitoring import (
+    AnomalySeverity,
+    ChargerStatus,
+    HealthState,
+    IncidentRiskLevel,
+)
 
 
 class TopProblematicChargerRead(BaseModel):
@@ -42,6 +47,8 @@ class BiOperationalInsightRead(BaseModel):
     high_severity_anomalies: int
     average_power_kw: float
     anomaly_rate_percent: float
+    incident_risk_score: int
+    incident_risk_level: IncidentRiskLevel
     health_state: HealthState
 
     model_config = ConfigDict(from_attributes=True)

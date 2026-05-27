@@ -1,4 +1,20 @@
 services:
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-voltedge}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-voltedge}
+    ports:
+      - "${RABBITMQ_AMQP_PORT:-5672}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   postgres:
     image: postgres:16-alpine
     environment:
@@ -19,11 +35,16 @@ services:
       context: ./backend
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg2://voltedge:voltedge@postgres:5432/voltedge_monitoring}
+      RABBITMQ_URL: ${RABBITMQ_URL:-amqp://voltedge:voltedge@rabbitmq:5672/}
+      RABBITMQ_ENABLED: ${RABBITMQ_ENABLED:-true}
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     depends_on:
       postgres:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
 
 volumes:
   postgres_data:
+  rabbitmq_data:

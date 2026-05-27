@@ -26,6 +26,13 @@ def test_health_endpoint_returns_ok():
     assert response.json()["status"] == "ok"
 
 
+def test_dashboard_page_is_served():
+    response = client.get("/dashboard")
+
+    assert response.status_code == 200
+    assert "VoltEdge Dashboard" in response.text
+
+
 def test_create_and_list_telemetry_events():
     payload = {
         "charger_id": "CHG-001",

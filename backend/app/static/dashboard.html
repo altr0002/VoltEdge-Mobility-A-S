@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>VoltEdge Operational Dashboard</title>
+    <link rel="stylesheet" href="/static/dashboard.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Operational Monitoring</p>
+        <h1>VoltEdge Dashboard</h1>
+      </div>
+      <div class="status-strip">
+        <span id="apiStatus" class="status-pill">Checking API</span>
+        <span id="lastUpdated" class="muted">Waiting for data</span>
+        <button id="refreshButton" type="button">Refresh</button>
+      </div>
+    </header>
+
+    <main class="dashboard-shell">
+      <section class="kpi-grid" aria-label="Operational KPIs">
+        <article class="metric">
+          <span>Total events</span>
+          <strong id="totalEvents">0</strong>
+        </article>
+        <article class="metric">
+          <span>Total anomalies</span>
+          <strong id="totalAnomalies">0</strong>
+        </article>
+        <article class="metric">
+          <span>Anomaly rate</span>
+          <strong id="anomalyRate">0%</strong>
+        </article>
+        <article class="metric">
+          <span>Faulted chargers</span>
+          <strong id="faultedChargers">0</strong>
+        </article>
+        <article class="metric">
+          <span>Average power</span>
+          <strong id="averagePower">0 kW</strong>
+        </article>
+      </section>
+
+      <section class="dashboard-grid">
+        <section class="panel panel-wide">
+          <div class="panel-header">
+            <div>
+              <h2>Anomalies Over Time</h2>
+            </div>
+          </div>
+          <div id="anomalyTrend" class="chart-panel"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <h2>Average Power Trend</h2>
+            </div>
+          </div>
+          <div id="powerTrend" class="chart-panel"></div>
+        </section>
+
+        <section class="panel panel-wide">
+          <div class="panel-header">
+            <div>
+              <h2>Incident Risk</h2>
+            </div>
+          </div>
+          <div id="riskChart" class="bar-list"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <h2>Health State</h2>
+            </div>
+          </div>
+          <div id="healthChart" class="state-list"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <h2>Anomaly Severity</h2>
+            </div>
+          </div>
+          <div id="severityChart" class="state-list"></div>
+        </section>
+
+        <section class="panel panel-wide">
+          <div class="panel-header">
+            <div>
+              <h2>Latest Telemetry</h2>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Charger</th>
+                  <th>Status</th>
+                  <th>Power</th>
+                  <th>Error</th>
+                  <th>Heartbeat</th>
+                </tr>
+              </thead>
+              <tbody id="telemetryTable"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <h2>Top Problem Chargers</h2>
+            </div>
+          </div>
+          <div id="problemList" class="compact-list"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <h2>Recent Anomalies</h2>
+            </div>
+          </div>
+          <div id="anomalyList" class="compact-list"></div>
+        </section>
+      </section>
+    </main>
+
+    <script src="/static/dashboard.js"></script>
+  </body>
+</html>

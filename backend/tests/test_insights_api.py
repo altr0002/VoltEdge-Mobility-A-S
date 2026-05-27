@@ -138,15 +138,21 @@ def test_bi_operational_insights_returns_flat_power_bi_ready_records():
         "high_severity_anomalies": 0,
         "average_power_kw": 42.5,
         "anomaly_rate_percent": 0.0,
+        "incident_risk_score": 0,
+        "incident_risk_level": "LOW",
         "health_state": "HEALTHY",
     }
     assert records["CHG-002"]["latest_status"] == "FAULTED"
     assert records["CHG-002"]["total_anomalies"] == 2
     assert records["CHG-002"]["high_severity_anomalies"] == 2
     assert records["CHG-002"]["anomaly_rate_percent"] == 200.0
+    assert records["CHG-002"]["incident_risk_score"] == 100
+    assert records["CHG-002"]["incident_risk_level"] == "HIGH"
     assert records["CHG-002"]["health_state"] == "CRITICAL"
     assert records["CHG-003"]["total_anomalies"] == 1
     assert records["CHG-003"]["anomaly_rate_percent"] == 100.0
+    assert records["CHG-003"]["incident_risk_score"] == 53
+    assert records["CHG-003"]["incident_risk_level"] == "MEDIUM"
     assert records["CHG-003"]["health_state"] == "WARNING"
 
 

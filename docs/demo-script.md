@@ -27,6 +27,14 @@ docker compose up -d --build
 docker compose ps
 ```
 
+Expected services:
+
+```text
+backend
+postgres
+rabbitmq
+```
+
 ## 5. Verify API health from inside the VM
 
 ```bash
@@ -39,6 +47,31 @@ Expected result: the API returns `status: ok`.
 
 ```text
 http://<VM-IP>:8000/docs
+```
+
+Open the operational dashboard:
+
+```text
+http://<VM-IP>:8000/dashboard
+```
+
+Open RabbitMQ Management UI through an SSH tunnel:
+
+```bash
+ssh -L 15672:localhost:15672 VMVoltEdge
+```
+
+Keep the SSH session open, then open:
+
+```text
+http://localhost:15672
+```
+
+Login:
+
+```text
+user: voltedge
+password: voltedge
 ```
 
 ## 7. Submit normal charger telemetry
@@ -63,6 +96,13 @@ curl http://localhost:8000/api/telemetry
 ```
 
 Use this response to show that the API validates operational telemetry and stores it in PostgreSQL.
+
+Also show that telemetry events are published to RabbitMQ:
+
+1. Open `http://localhost:15672` through the SSH tunnel.
+2. Go to Queues.
+3. Open `telemetry.events`.
+4. Confirm that messages have been published after `POST /api/telemetry`.
 
 ## 9. Submit faulty charger telemetry
 
@@ -103,6 +143,12 @@ curl http://localhost:8000/api/insights/anomaly-rate
 
 Use these responses to show the full MVP value chain: Telemetry Monitoring -> Anomaly Detection -> Operational Insights.
 
+Use the dashboard to show the same value chain visually:
+
+```text
+http://<VM-IP>:8000/dashboard
+```
+
 ## 12. Read BI-ready data
 
 ```bash
@@ -120,3 +166,32 @@ python3 scripts/seed_demo_data.py
 ```
 
 Then repeat the anomaly, insights and BI-ready endpoint calls.
+
+## Optional: Simulate Power BI demo data
+
+For a richer Power BI dashboard, create a larger telemetry history through the
+VM API:
+
+```bash
+python3 scripts/simulate_demo_data.py --base-url http://<VM-IP>:8000
+```
+
+This creates multiple charger patterns over several days, including healthy
+chargers, low power output, offline periods, unavailable windows, connector
+failures and thermal faults. The simulator only submits telemetry. The backend
+still performs validation, persistence, anomaly detection and BI-ready insight
+calculation.
+
+Use the BI endpoint from Power BI:
+
+```text
+http://<VM-IP>:8000/api/bi/operational-insights
+```
+
+Useful visuals:
+
+- Top chargers by `incident_risk_score`
+- Charger count by `incident_risk_level`
+- Charger count by `health_state`
+- `total_anomalies` by `charger_id`
+- `average_power_kw` by `charger_id`
