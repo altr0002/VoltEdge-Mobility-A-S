@@ -58,6 +58,26 @@ services:
       postgres:
         condition: service_healthy
 
+  jupyter:
+    build:
+      context: ./jupyter
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg2://voltedge:voltedge@postgres:5432/voltedge_monitoring}
+      JUPYTER_TOKEN: ${JUPYTER_TOKEN:-voltedge}
+    command:
+      [
+        "start-notebook.py",
+        "--IdentityProvider.token=${JUPYTER_TOKEN:-voltedge}",
+        "--ServerApp.password=",
+      ]
+    ports:
+      - "${JUPYTER_PORT:-8888}:8888"
+    volumes:
+      - ./notebooks:/home/jovyan/work
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   gateway:
     image: nginx:1.27-alpine
     volumes:
