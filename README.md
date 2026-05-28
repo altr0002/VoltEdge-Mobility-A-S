@@ -193,10 +193,10 @@ Dashboardet understøtter eksamenskravet om Business Intelligence / analytics vi
 
 MVP'en bruger ikke Power BI som selve visualiseringsværktøj. I denne MVP demonstreres BI-princippet gennem API'et `/api/bi/operational-insights` og dashboardet på `/dashboard`.
 
-Åbn Jupyter Notebook fra browser:
+Åbn Jupyter Notebook fra browser via gatewayen:
 
 ```text
-http://<VM-IP>:8888/?token=voltedge
+http://<VM-IP>:8000/jupyter/?token=voltedge
 ```
 
 Notebooken ligger her:

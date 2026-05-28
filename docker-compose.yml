@@ -74,6 +74,8 @@ services:
         "start-notebook.py",
         "--IdentityProvider.token=${JUPYTER_TOKEN:-voltedge}",
         "--ServerApp.password=",
+        "--ServerApp.base_url=/jupyter",
+        "--ServerApp.trust_xheaders=True",
       ]
     ports:
       - "${JUPYTER_PORT:-8888}:8888"
@@ -95,6 +97,8 @@ services:
         condition: service_started
       insights-service:
         condition: service_started
+      jupyter:
+        condition: service_healthy
 
 volumes:
   postgres_data:
