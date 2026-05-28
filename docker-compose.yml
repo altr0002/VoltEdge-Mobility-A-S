@@ -74,7 +74,7 @@ services:
         "start-notebook.py",
         "--IdentityProvider.token=${JUPYTER_TOKEN:-voltedge}",
         "--ServerApp.password=",
-        "--ServerApp.base_url=/jupyter",
+        "--ServerApp.base_url=/jupyter/",
         "--ServerApp.trust_xheaders=True",
       ]
     ports:
